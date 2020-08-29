@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 from flask_migrate import Migrate
 
-from models import setup_db, User
+from models import setup_db, User, Todo
 
 app = Flask(__name__)
 db = setup_db(app)
@@ -13,7 +13,7 @@ migrate = Migrate(app, db)
 CORS(app)
 
 
-@app.route('/api/v1/users/<id>')
+@app.route('/api/v1/users/<int:id>')
 def get_user(id):
     user = User.query.get(id)
     if user is None:
@@ -42,7 +42,7 @@ def post_user():
     }), 201
 
 
-@app.route('/api/v1/users/<id>', methods=['PATCH'])
+@app.route('/api/v1/users/<int:id>', methods=['PATCH'])
 def patch_user(id):
     """
     Modifies a user in the database
@@ -77,7 +77,7 @@ def patch_user(id):
     }), 200
 
 
-@app.route('/api/v1/users/<id>', methods=['DELETE'])
+@app.route('/api/v1/users/<int:id>', methods=['DELETE'])
 def delete_user(id):
     """
     Deletes a user from the database
@@ -94,3 +94,33 @@ def delete_user(id):
     return jsonify({
         "success": True
     }), 200
+
+
+@app.route('/api/v1/users/<int:user_id>/todos', methods=['POST'])
+def post_todo(user_id):
+    if request.json is None:
+        abort(415)
+
+    todos = request.json
+    if not isinstance(todos, list) or len(todos) == 0:
+        abort(400)
+
+    count_user = User.query.filter_by(id=user_id).count()
+    if count_user == 0:
+        abort(404)
+
+    response_todos = []
+    for todo in todos:
+        done = todo.get('done') or False
+        title = todo.get('title')
+        if title is None:
+            abort(400)
+        new_todo = Todo(owner_id=user_id, title=title, done=done)
+        clone = new_todo.persist()
+        response_todos.append(clone.json)
+
+    return jsonify({
+        "success": True,
+        "user_id": user_id,
+        "todos": response_todos
+    })
