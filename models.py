@@ -1,4 +1,5 @@
 import os
+from typing import cast
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import SQLAlchemyError
@@ -24,6 +25,15 @@ class User(db.Model):
     def __init__(self, name, email):
         self.name = name
         self.email = email
+
+    def __eq__(self, o: object) -> bool:
+        if type(o) == type(self):
+            o_user: User = cast(User, o)
+            return self.name == o_user.name \
+                   and self.email == o_user.email \
+                   and self.id == o_user.id
+        else:
+            return False
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)

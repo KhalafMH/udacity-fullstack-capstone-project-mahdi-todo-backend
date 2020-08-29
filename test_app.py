@@ -2,7 +2,9 @@ import unittest
 
 from app import app
 from constants import TEST_DATABASE_URL
-from models import setup_db, User
+from models import setup_db, User, Todo
+
+BASE_URL = '/api/v1'
 
 
 class AppTest(unittest.TestCase):
@@ -12,14 +14,14 @@ class AppTest(unittest.TestCase):
         self.db = setup_db(self.app, TEST_DATABASE_URL)
 
         with self.app.app_context():
-            self.db.engine.execute('''
-                DROP TABLE IF EXISTS todos;
-                DROP TABLE IF EXISTS users;
+            self.db.engine.execute(f'''
+                DROP TABLE IF EXISTS {Todo.__tablename__};
+                DROP TABLE IF EXISTS {User.__tablename__};
             ''')
             self.db.create_all()
 
     def tearDown(self) -> None:
-        pass
+        self.db.session.close()
 
     def test_post_user_persists_user(self):
         test_name = 'Example User'
@@ -30,7 +32,7 @@ class AppTest(unittest.TestCase):
         self.assertEqual(0, user_count)
 
         # When: POST user request performed
-        response = self.client.post('/api/v1/users', json={'name': test_name, 'email': test_email})
+        response = self.client.post(f'{BASE_URL}/users', json={'name': test_name, 'email': test_email})
 
         # Then: Request is successful and user is present in database
         self.assertEqual(201, response.status_code)
@@ -38,3 +40,66 @@ class AppTest(unittest.TestCase):
         self.assertEqual(test_email, response.json['user']['email'])
         user = User.query.filter_by(email=test_email).one()
         self.assertEqual(test_name, user.name)
+
+    def test_patch_user_modifies_the_user_record(self):
+        old_name = 'Example User'
+        new_name = 'Sample User'
+        old_email = 'user@example.com'
+        new_email = 'sample@example.com'
+
+        # Given: A user exists in the database
+        user = User(name=old_name, email=old_email)
+        persisted_user = user.persist()
+
+        # When: The patch user endpoint is called
+        first_response = self.client.patch(f'{BASE_URL}/users/{persisted_user.id}', json={'name': new_name})
+        second_response = self.client.patch(f'{BASE_URL}/users/{persisted_user.id}', json={'email': new_email})
+
+        # Then: The user record in the database is modified
+        user_after = User.query.get(persisted_user.id)
+        self.assertEqual(new_name, user_after.name)
+        self.assertEqual(new_email, user_after.email)
+        self.assertEqual(200, first_response.status_code)
+        self.assertEqual(new_name, first_response.json['user']['name'])
+        self.assertEqual(old_email, first_response.json['user']['email'])
+        self.assertEqual(new_name, second_response.json['user']['name'])
+        self.assertEqual(new_email, second_response.json['user']['email'])
+
+    def test_patch_user_fails_with_404_when_user_non_existent(self):
+        ID = 2000
+
+        # Given: No user exists with id ID in the database
+        user = User.query.get(ID)
+        self.assertIsNone(user)
+
+        # When: A patch request is received for modifying user with id 2000
+        response = self.client.patch(f'{BASE_URL}/users/{ID}', json={'name': 'New Name'})
+
+        # Then: A failed response with error 404 is received and user is not inserted in the database
+        self.assertEqual(404, response.status_code)
+        self.assertIsNone(User.query.get(ID))
+
+    def test_patch_user_fails_with_400_when_request_invalid(self):
+        # Given: A user exists in the database
+        user = User(name='Example User', email='user@example.com')
+        persisted_user = user.persist()
+
+        # When: A request is made to modify the user with invalid data
+        response1 = self.client.patch(f'{BASE_URL}/users/{persisted_user.id}', json={'email': 'My Email'})
+        response2 = self.client.patch(f'{BASE_URL}/users/{persisted_user.id}', json={})
+
+        # Then: A failed response with error 400 is received and user is not modified
+        self.assertEqual(400, response1.status_code)
+        self.assertEqual(400, response2.status_code)
+        self.assertEqual(persisted_user, User.query.get(persisted_user.id))
+
+    def test_patch_user_fails_with_415_when_request_is_not_json(self):
+        # Given: A record exists in the database
+        user = User(name='Example User', email='user@example.com')
+        persisted_user = user.persist()
+
+        # When: A request is received with no JSON content
+        response = self.client.patch(f'{BASE_URL}/users/{persisted_user.id}', data='Hello There')
+
+        # Then: A 415 error is received
+        self.assertEqual(415, response.status_code)
