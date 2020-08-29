@@ -62,4 +62,23 @@ def patch_user(id):
     return jsonify({
         "success": True,
         "user": persisted_user.json
-    })
+    }), 200
+
+
+@app.route('/api/v1/users/<id>', methods=['DELETE'])
+def delete_user(id):
+    """
+    Deletes a user from the database
+
+    :param id: The id of the user
+    :return: A JSON response indicating the success of the request
+    """
+    user = User.query.get(id)
+    if user is None:
+        abort(404)
+
+    user.delete()
+
+    return jsonify({
+        "success": True
+    }), 200

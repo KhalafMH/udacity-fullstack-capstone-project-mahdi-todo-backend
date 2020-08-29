@@ -19,7 +19,7 @@ class ModelTests(unittest.TestCase):
             self.db.create_all()
 
     def tearDown(self) -> None:
-        pass
+        self.db.session.close()
 
     def test_user_persist_persists_the_user_to_the_database(self):
         test_name = 'Example User'
@@ -99,3 +99,16 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(todo.done, json['done'])
         self.assertEqual(todo.id, json['id'])
         self.assertEqual(3, len(json))
+
+    def test_user_delete(self):
+        # Given: A user object which is persisted to the database
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+
+        # When: The delete method is called
+        result = user_before.delete()
+
+        # Then: The user record is removed from the database
+        self.assertEqual(True, result)
+        user_after = User.query.get(user_before.id)
+        self.assertIsNone(user_after)

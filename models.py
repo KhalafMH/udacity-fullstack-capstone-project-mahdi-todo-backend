@@ -42,21 +42,36 @@ class User(db.Model):
 
     def persist(self):
         """
-        Inserts this `User` into the `users` database table
+        Inserts this `User` into the `users` database table.
 
-        :return: A clone of this user containing the `id` of the inserted record
+        :return: A clone of this user containing the `id` of the inserted record.
         """
         try:
             db.session.add(self)
             db.session.commit()
-            result = self.clone()
+            return self.clone()
         except SQLAlchemyError as e:
             db.session.rollback()
             raise e
         finally:
             db.session.close()
 
-        return result
+    def delete(self):
+        """
+        Deletes this `User` from the database table.
+
+        :return: True when the deletion is successful
+        """
+        try:
+            user = User.query.get(self.id)
+            db.session.delete(user)
+            db.session.commit()
+            return True
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            raise e
+        finally:
+            db.session.close()
 
     @property
     def json(self):
