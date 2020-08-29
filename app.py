@@ -13,6 +13,18 @@ migrate = Migrate(app, db)
 CORS(app)
 
 
+@app.route('/api/v1/users/<id>')
+def get_user(id):
+    user = User.query.get(id)
+    if user is None:
+        abort(404)
+
+    return jsonify({
+        "success": True,
+        "user": user.json
+    })
+
+
 @app.route('/api/v1/users', methods=['POST'])
 def post_user():
     """

@@ -41,6 +41,34 @@ class AppTest(unittest.TestCase):
         user = User.query.filter_by(email=test_email).one()
         self.assertEqual(test_name, user.name)
 
+    def test_get_user_returns_user(self):
+        # Given: A user exists in the database
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+
+        # When: A request is performed to the GET user endpoint
+        response = self.client.get(f'{BASE_URL}/users/{user_before.id}')
+
+        # Then: The response is successful and contains details of the user
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.json['success'])
+        self.assertEqual(user_before.name, response.json['user']['name'])
+        self.assertEqual(user_before.email, response.json['user']['email'])
+        self.assertEqual(user_before.id, response.json['user']['id'])
+
+    def test_get_user_fails_with_404_when_user_non_existent(self):
+        ID = 2000
+
+        # Given: No user exists with id ID in the database
+        user = User.query.get(ID)
+        self.assertIsNone(user)
+
+        # When: A get request is performed for getting the user with id ID
+        response = self.client.get(f'{BASE_URL}/users/{ID}')
+
+        # Then: A failed response with error 404 is received
+        self.assertEqual(404, response.status_code)
+
     def test_patch_user_modifies_the_user_record(self):
         old_name = 'Example User'
         new_name = 'Sample User'
