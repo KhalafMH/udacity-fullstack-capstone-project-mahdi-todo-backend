@@ -158,3 +158,70 @@ class AppTest(unittest.TestCase):
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
+
+    def test_post_todo_creates_todo_for_a_user(self):
+        # Given: No todos are present in the database for a user
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+
+        todo_title1 = 'Do something'
+        todo_title2 = 'Do something else'
+        count_todo_before1 = Todo.query.filter_by(title=todo_title1).count()
+        count_todo_before2 = Todo.query.filter_by(title=todo_title2).count()
+        self.assertEqual(0, count_todo_before1)
+        self.assertEqual(0, count_todo_before2)
+
+        # When: A request is made to the POST endpoint for creating todos
+        todos = [
+            {'title': todo_title1, 'done': False},
+            {'title': todo_title2, 'done': True}
+        ]
+        response = self.client.post(f'{BASE_URL}/users/{user_before.id}/todos', json=todos)
+
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.json['success'])
+        mapped_response_todos = list(map(lambda x: {'title': x['title'], 'done': x['done']}, response.json['todos']))
+        self.assertEqual(todos, mapped_response_todos)
+        self.assertEqual(user_before.id, response.json['user_id'])
+
+    def test_post_todo_fails_with_404_when_user_non_existent(self):
+        ID = 2000
+
+        # Given: No user exists with id ID in the database
+        user = User.query.get(ID)
+        self.assertIsNone(user)
+
+        todo = {'title': 'Do something', 'done': False}
+
+        # When: A post request is made to create todos for user with id ID
+        response = self.client.post(f'{BASE_URL}/users/{ID}/todos', json=[todo])
+
+        # Then: A failed response with error 404 is received
+        self.assertEqual(404, response.status_code)
+
+    def test_post_todo_fails_with_415_when_data_not_json(self):
+        # Given: A user exists in the database
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+
+        # When: A request is made to create a todo with no JSON content
+        response = self.client.post(f'{BASE_URL}/users/{user_before.id}/todos')
+
+        # Then: A failed response with error 415 is received
+        self.assertEqual(415, response.status_code)
+
+    def test_post_todo_fails_with_400_when_request_invalid(self):
+        # Given: A user exists in the database
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+
+        # When: A post request is made to the create todos endpoint with no title for a todo
+        todo = {'done': True}
+        response1 = self.client.post(f'{BASE_URL}/users/{user_before.id}/todos', json=[todo])
+        response2 = self.client.post(f'{BASE_URL}/users/{user_before.id}/todos', json=[])
+        response3 = self.client.post(f'{BASE_URL}/users/{user_before.id}/todos', json='Do something')
+
+        # Then: A 400 response is received
+        self.assertEqual(400, response1.status_code)
+        self.assertEqual(400, response2.status_code)
+        self.assertEqual(400, response3.status_code)

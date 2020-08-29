@@ -114,7 +114,8 @@ class User(db.Model):
 class Todo(db.Model):
     __tablename__ = 'todos'
 
-    def __init__(self, title, done):
+    def __init__(self, owner_id, title, done):
+        self.owner_id = owner_id
         self.title = title
         self.done = done
 
@@ -125,6 +126,22 @@ class Todo(db.Model):
 
     # user = backref from User class
 
+    def persist(self):
+        """
+        Inserts this `Todo` into the `todos` database table.
+
+        :return: A clone of this todo containing the `id` of the inserted record.
+        """
+        try:
+            db.session.add(self)
+            db.session.commit()
+            return self.clone()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            raise e
+        finally:
+            db.session.close()
+
     @property
     def json(self):
         """
@@ -134,6 +151,17 @@ class Todo(db.Model):
         """
         return {
             "id": self.id,
+            "owner_id": self.owner_id,
             "title": self.title,
             "done": self.done
         }
+
+    def clone(self):
+        """
+        Clones this todo object.
+
+        :return: A new `Todo` object with the same properties as this one
+        """
+        result = Todo(owner_id=self.owner_id, title=self.title, done=self.done)
+        result.id = self.id
+        return result
