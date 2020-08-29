@@ -29,6 +29,11 @@ class User(db.Model):
     todos = db.relationship('Todo', backref='user')
 
     def persist(self):
+        """
+        Inserts this `User` into the `users` database table
+
+        :return: A clone of this user containing the `id` of the inserted record
+        """
         try:
             db.session.add(self)
             db.session.commit()
@@ -43,6 +48,11 @@ class User(db.Model):
 
     @property
     def json(self):
+        """
+        Helper for getting the short JSON representation of the user without the todos.
+
+        :return: A dictionary with the short representation of the user.
+        """
         return {
             "id": self.id,
             "name": self.name,
@@ -51,6 +61,11 @@ class User(db.Model):
 
     @property
     def json_full(self):
+        """
+        Helper for getting the full JSON representation of the user with all the todos.
+
+        :return: A dictionary with the long representation of the user.
+        """
         return {
             "id": self.id,
             "name": self.name,
@@ -59,6 +74,11 @@ class User(db.Model):
         }
 
     def clone(self):
+        """
+        Clones this user object.
+
+        :return: A new `User` object with the same properties as this one
+        """
         result = User(name=self.name, email=self.email)
         result.id = self.id
         return result
@@ -80,6 +100,11 @@ class Todo(db.Model):
 
     @property
     def json(self):
+        """
+        Helper for getting the JSON representation of the todo.
+
+        :return: A dictionary with the JSON representation of the todo.
+        """
         return {
             "id": self.id,
             "title": self.title,
