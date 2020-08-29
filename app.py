@@ -96,6 +96,19 @@ def delete_user(id):
     }), 200
 
 
+@app.route('/api/v1/users/<int:user_id>/todos')
+def get_todos(user_id):
+    user = User.query.get(user_id)
+    if user is None:
+        abort(404)
+
+    return jsonify({
+        "success": True,
+        "user_id": user.id,
+        "todos": [todo.json for todo in user.todos]
+    })
+
+
 @app.route('/api/v1/users/<int:user_id>/todos', methods=['POST'])
 def post_todo(user_id):
     if request.json is None:
