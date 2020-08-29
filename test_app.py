@@ -225,3 +225,36 @@ class AppTest(unittest.TestCase):
         self.assertEqual(400, response1.status_code)
         self.assertEqual(400, response2.status_code)
         self.assertEqual(400, response3.status_code)
+
+    def test_get_user_todos_returns_the_todos(self):
+        # Given: A user with some todos
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+        todo1 = Todo(owner_id=user_before.id, title='Do something', done=True)
+        todo2 = Todo(owner_id=user_before.id, title='Do something else', done=False)
+        todo1_clone = todo1.persist()
+        todo2_clone = todo2.persist()
+        persisted_user = User.query.get(user_before.id)
+        self.assertEqual(2, len(persisted_user.todos))
+
+        # When: A request is made to the get user todos endpoint
+        response = self.client.get(f'{BASE_URL}/users/{user_before.id}/todos')
+
+        # Then: The request is successful and the response contains the user's todos
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.json['success'])
+        self.assertEqual(user_before.id, response.json['user_id'])
+        self.assertEqual([todo1_clone.json, todo2_clone.json], response.json['todos'])
+
+    def test_get_user_todos_fails_with_404_when_user_non_existent(self):
+        ID = 2000
+
+        # Given: No user exists with id ID in the database
+        user = User.query.get(ID)
+        self.assertIsNone(user)
+
+        # When: A get request is made to get todos for user with id ID
+        response = self.client.get(f'{BASE_URL}/users/{ID}/todos')
+
+        # Then: A failed response with error 404 is received
+        self.assertEqual(404, response.status_code)
