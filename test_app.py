@@ -25,9 +25,15 @@ class AppTest(unittest.TestCase):
     def test_post_user_persists_user(self):
         test_name = 'Example User'
         test_email = 'user@example.com'
+
+        # Given: User not present in database
         user_count = User.query.filter_by(email=test_email).count()
         self.assertEqual(0, user_count)
+
+        # When: POST user request performed
         response = self.client.post('/api/v1/users', json={'name': test_name, 'email': test_email})
+
+        # Then: Request is successful and user is present in database
         self.assertEqual(201, response.status_code)
         self.assertEqual(test_name, response.json['user']['name'])
         self.assertEqual(test_email, response.json['user']['email'])
