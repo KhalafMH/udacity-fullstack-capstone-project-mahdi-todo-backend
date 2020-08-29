@@ -3,7 +3,9 @@ import os
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import SQLAlchemyError
 
-DATABASE_URL = os.environ.get('DATABASE_URL') or 'postgres://postgres:password@localhost:5432/mahdi_todo'
+from constants import DEFAULT_DATABASE_URL
+
+DATABASE_URL = os.environ.get('DATABASE_URL') or DEFAULT_DATABASE_URL
 
 db = SQLAlchemy()
 
