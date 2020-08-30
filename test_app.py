@@ -258,3 +258,63 @@ class AppTest(unittest.TestCase):
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
+
+    def test_patch_todo_modifies_the_todo(self):
+        # Given: A user with a single todo
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+        todo = Todo(owner_id=user_before.id, title='Do something', done=False)
+        todo_before = todo.persist()
+
+        # When: A request is made to modify the todo
+        response = self.client.patch(f'{BASE_URL}/users/{user_before.id}/todos/{todo_before.id}', json={'done': True})
+
+        # Then: The response is successful and the todo is modified in the database
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.json['success'])
+        self.assertEqual(user_before.id, response.json['user_id'])
+        self.assertEqual(todo_before.title, response.json['todo']['title'])
+        self.assertEqual(True, response.json['todo']['done'])
+
+    def test_patch_todo_fails_with_404_when_todo_non_existent_for_existing_user(self):
+        TODO_ID = 2000
+
+        # Given: No todo exists with id ID in the database for a user
+        todo = Todo.query.get(TODO_ID)
+        self.assertIsNone(todo)
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+
+        # When: A patch request is made to modify todo with id ID
+        response = self.client.patch(f'{BASE_URL}/users/{user_before.id}/todos/{TODO_ID}', json={'done': True})
+
+        # Then: A failed response with error 404 is received
+        self.assertEqual(404, response.status_code)
+
+    def test_patch_todo_fails_with_400_when_request_invalid(self):
+        # Given: A user exists in the database with one todo
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+        todo = Todo(owner_id=user_before.id, title='Do something', done=False)
+        todo_before = todo.persist()
+
+        # When: An invalid patch request is made to the modify todo endpoint
+        response1 = self.client.patch(f'{BASE_URL}/users/{user_before.id}/todos/{todo_before.id}', json={})
+        response2 = self.client.patch(f'{BASE_URL}/users/{user_before.id}/todos/{todo_before.id}', json='')
+
+        # Then: A 400 response is received
+        self.assertEqual(400, response1.status_code)
+        self.assertEqual(400, response2.status_code)
+
+    def test_patch_todo_fails_with_415_when_data_not_json(self):
+        # Given: A user exists in the database with one todo
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+        todo = Todo(owner_id=user_before.id, title='Do something', done=False)
+        todo_before = todo.persist()
+
+        # When: A request is made to modify the todo with no JSON content
+        response = self.client.patch(f'{BASE_URL}/users/{user_before.id}/todos/{todo_before.id}')
+
+        # Then: A failed response with error 415 is received
+        self.assertEqual(415, response.status_code)
