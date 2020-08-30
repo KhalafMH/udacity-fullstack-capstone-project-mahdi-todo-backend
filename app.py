@@ -22,7 +22,7 @@ def get_user(id):
     return jsonify({
         "success": True,
         "user": user.json
-    })
+    }), 200
 
 
 @app.route('/api/v1/users', methods=['POST'])
@@ -48,7 +48,7 @@ def patch_user(id):
     Modifies a user in the database
 
     :param id: The id of the user record
-    :return: A JSON response indicating the success of the request and the new details of the user
+    :return: A 200 JSON response indicating the success of the request and the new details of the user
     """
     if request.json is None:
         abort(415)  # unsupported media type
@@ -83,7 +83,7 @@ def delete_user(id):
     Deletes a user from the database
 
     :param id: The id of the user
-    :return: A JSON response indicating the success of the request
+    :return: A 200 JSON response indicating the success of the request
     """
     user = User.query.get(id)
     if user is None:
@@ -106,7 +106,7 @@ def get_todos(user_id):
         "success": True,
         "user_id": user.id,
         "todos": [todo.json for todo in user.todos]
-    })
+    }), 200
 
 
 @app.route('/api/v1/users/<int:user_id>/todos', methods=['POST'])
@@ -136,4 +136,39 @@ def post_todo(user_id):
         "success": True,
         "user_id": user_id,
         "todos": response_todos
-    })
+    }), 200
+
+
+@app.route('/api/v1/users/<int:user_id>/todos/<int:todo_id>', methods=['PATCH'])
+def patch_todo(user_id, todo_id):
+    """
+    Modifies a todo for user with `user_id` in the database.
+
+    :param user_id: The ID of the owner of the todo
+    :param todo_id: The ID of the todo
+    :return: A 200 JSON response indicating the success of the request and the modified todo
+    """
+    todo = Todo.query.get(todo_id)
+    if todo is None:
+        abort(404)
+
+    if request.json is None:
+        abort(415)
+
+    if not isinstance(request.json, dict):
+        abort(400)
+
+    new_title = request.json.get('title')
+    new_done = request.json.get('done')
+    if new_title is None and new_done is None:
+        abort(400)
+
+    todo.title = new_title or todo.title
+    todo.done = new_done or todo.done
+    print(f'title: {todo.title}, done: {todo.done}')
+    todo.persist()
+    return jsonify({
+        "success": True,
+        "user_id": todo.owner_id,
+        "todo": todo.json
+    }), 200
