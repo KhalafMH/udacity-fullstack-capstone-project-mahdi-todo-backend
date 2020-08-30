@@ -95,11 +95,14 @@ def delete_user(id):
     if user is None:
         abort(404)
 
-    user.delete()
+    success = user.delete()
 
-    return jsonify({
-        "success": True
-    }), 200
+    if success:
+        return jsonify({
+            "success": True
+        }), 200
+    else:
+        abort(500)
 
 
 @app.route('/api/v1/users/<int:user_id>/todos')
@@ -190,3 +193,22 @@ def patch_todo(user_id, todo_id):
         "user_id": todo.owner_id,
         "todo": todo.json
     }), 200
+
+
+@app.route('/api/v1/users/<int:user_id>/todos/<int:todo_id>', methods=['DELETE'])
+def delete_todo(user_id, todo_id):
+    """
+    Deletes a user todo from the database.
+
+    :param user_id: The ID of the user who owns the todo.
+    :param todo_id: The ID of the todo.
+    :return: A 200 JSON response indicating the success of the request.
+    """
+    todo = Todo.query.get(todo_id) or abort(404)
+    success = todo.delete()
+    if success:
+        return jsonify({
+            "success": True
+        }), 200
+    else:
+        abort(500)
