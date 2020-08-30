@@ -279,13 +279,13 @@ class AppTest(unittest.TestCase):
     def test_patch_todo_fails_with_404_when_todo_non_existent_for_existing_user(self):
         TODO_ID = 2000
 
-        # Given: No todo exists with id ID in the database for a user
+        # Given: No todo exists with id TODO_ID in the database for a user
         todo = Todo.query.get(TODO_ID)
         self.assertIsNone(todo)
         user = User(name='Example User', email='user@example.com')
         user_before = user.persist()
 
-        # When: A patch request is made to modify todo with id ID
+        # When: A patch request is made to modify todo with id TODO_ID
         response = self.client.patch(f'{BASE_URL}/users/{user_before.id}/todos/{TODO_ID}', json={'done': True})
 
         # Then: A failed response with error 404 is received
@@ -318,3 +318,34 @@ class AppTest(unittest.TestCase):
 
         # Then: A failed response with error 415 is received
         self.assertEqual(415, response.status_code)
+
+    def test_delete_todo_deletes_the_todo_from_the_database(self):
+        # Given: A user exists in the database with one todo
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+        todo = Todo(owner_id=user_before.id, title='Do something', done=False)
+        todo_before = todo.persist()
+
+        # When: A delete request is performed
+        response = self.client.delete(f'{BASE_URL}/users/{user_before.id}/todos/{todo_before.id}')
+
+        # Then: The todo record is deleted from the database
+        self.assertEqual(200, response.status_code)
+        todo_after = Todo.query.get(todo_before.id)
+        self.assertIsNone(todo_after)
+        self.assertEqual(True, response.json['success'])
+
+    def test_delete_todo_fails_with_404_when_todo_non_existent(self):
+        TODO_ID = 2000
+
+        # Given: No todo exists with id TODO_ID in the database for a user
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+        todo = Todo.query.get(TODO_ID)
+        self.assertIsNone(todo)
+
+        # When: A delete request is performed for deleting todo with id TODO_ID
+        response = self.client.delete(f'{BASE_URL}/users/{user_before.id}/todos/{TODO_ID}')
+
+        # Then: A failed response with error 404 is received
+        self.assertEqual(404, response.status_code)

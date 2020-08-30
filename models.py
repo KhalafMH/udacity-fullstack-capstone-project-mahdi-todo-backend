@@ -142,6 +142,23 @@ class Todo(db.Model):
         finally:
             db.session.close()
 
+    def delete(self):
+        """
+        Deletes the record of this todo from the database.
+
+        :return: True when the deletion is successful.
+        """
+        try:
+            todo = Todo.query.get(self.id)
+            db.session.delete(todo)
+            db.session.commit()
+            return True
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            raise e
+        finally:
+            db.session.close()
+
     @property
     def json(self):
         """

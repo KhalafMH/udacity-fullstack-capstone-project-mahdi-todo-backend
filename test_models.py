@@ -140,6 +140,21 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(todo.owner_id, json['owner_id'])
         self.assertEqual(4, len(json))
 
+    def test_todo_delete_deletes_the_record_from_the_database(self):
+        # Given: A todo object which is persisted to the database
+        user = User(name='Example User', email='user@example.com')
+        user_before = user.persist()
+        todo = Todo(owner_id=user_before.id, title='Do something', done=False)
+        todo_before = todo.persist()
+
+        # When: The delete method is called
+        result = todo_before.delete()
+
+        # Then: The todo record is removed from the database
+        self.assertEqual(True, result)
+        todo_after = Todo.query.get(todo_before.id)
+        self.assertIsNone(todo_after)
+
     def test_user_delete(self):
         # Given: A user object which is persisted to the database
         user = User(name='Example User', email='user@example.com')
