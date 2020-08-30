@@ -13,9 +13,15 @@ migrate = Migrate(app, db)
 CORS(app)
 
 
-@app.route('/api/v1/users/<int:id>')
-def get_user(id):
-    user = User.query.get(id)
+@app.route('/api/v1/users/<int:user_id>')
+def get_user(user_id):
+    """
+    Returns the details of user with ID `user_id`.
+
+    :param user_id: The ID of the user.
+    :return: A 200 JSON response indicating the success of the request and the details of the requested user.
+    """
+    user = User.query.get(user_id)
     if user is None:
         abort(404)
 
@@ -98,6 +104,12 @@ def delete_user(id):
 
 @app.route('/api/v1/users/<int:user_id>/todos')
 def get_todos(user_id):
+    """
+    Returns the todos owned by a user.
+
+    :param user_id: The ID of the user.
+    :return: A 200 JSON response indicating the success of the request and the list of todos owned by the user.
+    """
     user = User.query.get(user_id)
     if user is None:
         abort(404)
@@ -111,6 +123,12 @@ def get_todos(user_id):
 
 @app.route('/api/v1/users/<int:user_id>/todos', methods=['POST'])
 def post_todo(user_id):
+    """
+    Creates todos in the database for user with id `user_id`.
+
+    :param user_id: The ID of the user for which todos will be created.
+    :return: A 200 JSON response indicating the success of the request and the list of inserted todos.
+    """
     if request.json is None:
         abort(415)
 
