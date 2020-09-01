@@ -30,7 +30,7 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(0, count)
 
         # When: persist() is called on the user
-        user = User(name=test_name, email=test_email)
+        user = User(id='1', name=test_name, email=test_email)
         persisted_user = user.persist()
 
         # Then: A record is created in the database table for the user
@@ -43,7 +43,7 @@ class ModelTests(unittest.TestCase):
 
     def test_user_json_property(self):
         # Given: A sample user
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user.id = '200'
 
         # When: The `json` property is called
@@ -58,7 +58,7 @@ class ModelTests(unittest.TestCase):
 
     def test_user_json_full_property(self):
         # Given: A sample user
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user.id = '200'
 
         # When: The `json` property is called
@@ -73,8 +73,7 @@ class ModelTests(unittest.TestCase):
 
     def test_user_clone_returns_identical_object(self):
         # Given: A sample user object
-        user = User(name='Example User', email='user@example.com')
-        user.id = 200
+        user = User(id='200', name='Example User', email='user@example.com')
 
         # When: The clone method is called
         clone = user.clone()
@@ -91,7 +90,7 @@ class ModelTests(unittest.TestCase):
         test_done = False
 
         # Given: User with no todos in the database
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user.persist()
         user_before = User.query.get(user.id)
         todos_before = user_before.todos
@@ -125,7 +124,7 @@ class ModelTests(unittest.TestCase):
 
     def test_todo_json_property(self):
         # Given: A sample todo
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
         todo = Todo(owner_id=user_before.id, title='Do something', done=False)
         todo.id = '200'
@@ -142,7 +141,7 @@ class ModelTests(unittest.TestCase):
 
     def test_todo_delete_deletes_the_record_from_the_database(self):
         # Given: A todo object which is persisted to the database
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
         todo = Todo(owner_id=user_before.id, title='Do something', done=False)
         todo_before = todo.persist()
@@ -157,7 +156,7 @@ class ModelTests(unittest.TestCase):
 
     def test_user_delete(self):
         # Given: A user object which is persisted to the database
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: The delete method is called

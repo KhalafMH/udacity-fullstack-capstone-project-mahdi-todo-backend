@@ -23,16 +23,17 @@ class AppTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.db.session.close()
 
-    def test_post_user_persists_user(self):
+    def test_put_user_persists_user(self):
         test_name = 'Example User'
         test_email = 'user@example.com'
+        test_user_id = '1'
 
         # Given: User not present in database
         user_count = User.query.filter_by(email=test_email).count()
         self.assertEqual(0, user_count)
 
         # When: POST user request performed
-        response = self.client.post(f'{BASE_URL}/users', json={'name': test_name, 'email': test_email})
+        response = self.client.put(f'{BASE_URL}/users/{test_user_id}', json={'name': test_name, 'email': test_email})
 
         # Then: Request is successful and user is present in database
         self.assertEqual(201, response.status_code)
@@ -41,10 +42,23 @@ class AppTest(unittest.TestCase):
         user = User.query.filter_by(email=test_email).one()
         self.assertEqual(test_name, user.name)
 
+    def test_put_user_fails_if_user_already_present(self):
+        # Given: A user exists in the database
+        user = User(id='1', name='Example 1', email='user1@example.com')
+        user_before = user.persist()
+
+        # When: A request is made to put user with the same id
+        new_user_json = {'name': 'Example 2', 'email': 'user2@example.com'}
+        response = self.client.put(f'{BASE_URL}/users/{user_before.id}', json=new_user_json)
+
+        # Then: The response is 409 (conflict)
+        self.assertEqual(409, response.status_code)
+        self.assertFalse(response.json['success'])
+
     def test_get_all_users_returns_all_users(self):
         # Given: Two users exist in the database
-        user1 = User(name='Example 1', email='user1@example.com')
-        user2 = User(name='Example 2', email='user2@example.com')
+        user1 = User(id='1', name='Example 1', email='user1@example.com')
+        user2 = User(id='2', name='Example 2', email='user2@example.com')
         user_1_before = user1.persist()
         user_2_before = user2.persist()
 
@@ -72,7 +86,7 @@ class AppTest(unittest.TestCase):
 
     def test_get_user_returns_user(self):
         # Given: A user exists in the database
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A request is performed to the GET user endpoint
@@ -86,14 +100,14 @@ class AppTest(unittest.TestCase):
         self.assertEqual(user_before.id, response.json['user']['id'])
 
     def test_get_user_fails_with_404_when_user_non_existent(self):
-        ID = 2000
+        user_id = '2000'
 
-        # Given: No user exists with id ID in the database
-        user = User.query.get(ID)
+        # Given: No user exists with id user_id in the database
+        user = User.query.get(user_id)
         self.assertIsNone(user)
 
-        # When: A get request is performed for getting the user with id ID
-        response = self.client.get(f'{BASE_URL}/users/{ID}')
+        # When: A get request is performed for getting the user with id user_id
+        response = self.client.get(f'{BASE_URL}/users/{user_id}')
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
@@ -106,7 +120,7 @@ class AppTest(unittest.TestCase):
         new_email = 'sample@example.com'
 
         # Given: A user exists in the database
-        user = User(name=old_name, email=old_email)
+        user = User(id='1', name=old_name, email=old_email)
         user_before = user.persist()
 
         # When: The patch user endpoint is called
@@ -124,23 +138,23 @@ class AppTest(unittest.TestCase):
         self.assertEqual(new_email, second_response.json['user']['email'])
 
     def test_patch_user_fails_with_404_when_user_non_existent(self):
-        ID = 2000
+        user_id = '2000'
 
-        # Given: No user exists with id ID in the database
-        user = User.query.get(ID)
+        # Given: No user exists with id user_id in the database
+        user = User.query.get(user_id)
         self.assertIsNone(user)
 
-        # When: A patch request is performed for modifying user with id ID
-        response = self.client.patch(f'{BASE_URL}/users/{ID}', json={'name': 'New Name'})
+        # When: A patch request is performed for modifying user with id user_id
+        response = self.client.patch(f'{BASE_URL}/users/{user_id}', json={'name': 'New Name'})
 
         # Then: A failed response with error 404 is received and user is not inserted in the database
         self.assertEqual(404, response.status_code)
         self.assertFalse(response.json["success"])
-        self.assertIsNone(User.query.get(ID))
+        self.assertIsNone(User.query.get(user_id))
 
     def test_patch_user_fails_with_400_when_request_invalid(self):
         # Given: A user exists in the database
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A request is made to modify the user with invalid data
@@ -156,7 +170,7 @@ class AppTest(unittest.TestCase):
 
     def test_patch_user_fails_with_415_when_request_is_not_json(self):
         # Given: A record exists in the database
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A request is performed with no JSON content
@@ -168,7 +182,7 @@ class AppTest(unittest.TestCase):
 
     def test_delete_user_deletes_the_user_from_the_database(self):
         # Given: A user exists in the database
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A delete request is performed
@@ -181,14 +195,14 @@ class AppTest(unittest.TestCase):
         self.assertEqual(True, response.json['success'])
 
     def test_delete_user_fails_with_404_when_user_non_existent(self):
-        ID = 2000
+        user_id = '2000'
 
-        # Given: No user exists with id ID in the database
-        user = User.query.get(ID)
+        # Given: No user exists with id user_id in the database
+        user = User.query.get(user_id)
         self.assertIsNone(user)
 
-        # When: A delete request is performed for deleting user with id ID
-        response = self.client.delete(f'{BASE_URL}/users/{ID}')
+        # When: A delete request is performed for deleting user with id user_id
+        response = self.client.delete(f'{BASE_URL}/users/{user_id}')
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
@@ -196,7 +210,7 @@ class AppTest(unittest.TestCase):
 
     def test_post_todo_creates_todo_for_a_user(self):
         # Given: No todos are present in the database for a user
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
 
         todo_title1 = 'Do something'
@@ -220,16 +234,16 @@ class AppTest(unittest.TestCase):
         self.assertEqual(user_before.id, response.json['user_id'])
 
     def test_post_todo_fails_with_404_when_user_non_existent(self):
-        ID = 2000
+        user_id = '2000'
 
-        # Given: No user exists with id ID in the database
-        user = User.query.get(ID)
+        # Given: No user exists with id user_id in the database
+        user = User.query.get(user_id)
         self.assertIsNone(user)
 
         todo = {'title': 'Do something', 'done': False}
 
-        # When: A post request is made to create todos for user with id ID
-        response = self.client.post(f'{BASE_URL}/users/{ID}/todos', json=[todo])
+        # When: A post request is made to create todos for user with id user_id
+        response = self.client.post(f'{BASE_URL}/users/{user_id}/todos', json=[todo])
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
@@ -237,7 +251,7 @@ class AppTest(unittest.TestCase):
 
     def test_post_todo_fails_with_415_when_data_not_json(self):
         # Given: A user exists in the database
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A request is made to create a todo with no JSON content
@@ -249,7 +263,7 @@ class AppTest(unittest.TestCase):
 
     def test_post_todo_fails_with_400_when_request_invalid(self):
         # Given: A user exists in the database
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A post request is made to the create todos endpoint with no title for a todo
@@ -265,7 +279,7 @@ class AppTest(unittest.TestCase):
 
     def test_get_user_todos_returns_the_todos(self):
         # Given: A user with some todos
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
         todo1 = Todo(owner_id=user_before.id, title='Do something', done=True)
         todo2 = Todo(owner_id=user_before.id, title='Do something else', done=False)
@@ -284,14 +298,14 @@ class AppTest(unittest.TestCase):
         self.assertEqual([todo1_clone.json, todo2_clone.json], response.json['todos'])
 
     def test_get_user_todos_fails_with_404_when_user_non_existent(self):
-        ID = 2000
+        user_id = '2000'
 
-        # Given: No user exists with id ID in the database
-        user = User.query.get(ID)
+        # Given: No user exists with id user_id in the database
+        user = User.query.get(user_id)
         self.assertIsNone(user)
 
-        # When: A get request is made to get todos for user with id ID
-        response = self.client.get(f'{BASE_URL}/users/{ID}/todos')
+        # When: A get request is made to get todos for user with id user_id
+        response = self.client.get(f'{BASE_URL}/users/{user_id}/todos')
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
@@ -299,7 +313,7 @@ class AppTest(unittest.TestCase):
 
     def test_patch_todo_modifies_the_todo(self):
         # Given: A user with a single todo
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
         todo = Todo(owner_id=user_before.id, title='Do something', done=False)
         todo_before = todo.persist()
@@ -315,16 +329,16 @@ class AppTest(unittest.TestCase):
         self.assertEqual(True, response.json['todo']['done'])
 
     def test_patch_todo_fails_with_404_when_todo_non_existent_for_existing_user(self):
-        TODO_ID = 2000
+        todo_id = 2000
 
-        # Given: No todo exists with id TODO_ID in the database for a user
-        todo = Todo.query.get(TODO_ID)
+        # Given: No todo exists with id todo_id in the database for a user
+        todo = Todo.query.get(todo_id)
         self.assertIsNone(todo)
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
 
-        # When: A patch request is made to modify todo with id TODO_ID
-        response = self.client.patch(f'{BASE_URL}/users/{user_before.id}/todos/{TODO_ID}', json={'done': True})
+        # When: A patch request is made to modify todo with id todo_id
+        response = self.client.patch(f'{BASE_URL}/users/{user_before.id}/todos/{todo_id}', json={'done': True})
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
@@ -332,7 +346,7 @@ class AppTest(unittest.TestCase):
 
     def test_patch_todo_fails_with_400_when_request_invalid(self):
         # Given: A user exists in the database with one todo
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
         todo = Todo(owner_id=user_before.id, title='Do something', done=False)
         todo_before = todo.persist()
@@ -349,7 +363,7 @@ class AppTest(unittest.TestCase):
 
     def test_patch_todo_fails_with_415_when_data_not_json(self):
         # Given: A user exists in the database with one todo
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
         todo = Todo(owner_id=user_before.id, title='Do something', done=False)
         todo_before = todo.persist()
@@ -363,7 +377,7 @@ class AppTest(unittest.TestCase):
 
     def test_delete_todo_deletes_the_todo_from_the_database(self):
         # Given: A user exists in the database with one todo
-        user = User(name='Example User', email='user@example.com')
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
         todo = Todo(owner_id=user_before.id, title='Do something', done=False)
         todo_before = todo.persist()
@@ -378,16 +392,16 @@ class AppTest(unittest.TestCase):
         self.assertEqual(True, response.json['success'])
 
     def test_delete_todo_fails_with_404_when_todo_non_existent(self):
-        TODO_ID = 2000
+        todo_id = 2000
 
-        # Given: No todo exists with id TODO_ID in the database for a user
-        user = User(name='Example User', email='user@example.com')
+        # Given: No todo exists with id todo_id in the database for a user
+        user = User(id='1', name='Example User', email='user@example.com')
         user_before = user.persist()
-        todo = Todo.query.get(TODO_ID)
+        todo = Todo.query.get(todo_id)
         self.assertIsNone(todo)
 
-        # When: A delete request is performed for deleting todo with id TODO_ID
-        response = self.client.delete(f'{BASE_URL}/users/{user_before.id}/todos/{TODO_ID}')
+        # When: A delete request is performed for deleting todo with id todo_id
+        response = self.client.delete(f'{BASE_URL}/users/{user_before.id}/todos/{todo_id}')
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)

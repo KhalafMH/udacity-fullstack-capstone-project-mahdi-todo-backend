@@ -23,7 +23,7 @@ def get_all_users():
     })
 
 
-@app.route('/api/v1/users/<int:user_id>')
+@app.route('/api/v1/users/<string:user_id>')
 def get_user(user_id):
     """
     Returns the details of user with ID `user_id`.
@@ -41,16 +41,20 @@ def get_user(user_id):
     }), 200
 
 
-@app.route('/api/v1/users', methods=['POST'])
-def post_user():
+@app.route('/api/v1/users/<string:user_id>', methods=['PUT'])
+def put_user(user_id):
     """
     Adds a new user to the database.
 
     :return: A JSON object indicating the success of the request and the inserted user.
     """
+    user_check = User.query.get(user_id)
+    if user_check is not None:
+        abort(409)
+
     name = request.json.get('name')
     email = request.json.get('email')
-    user = User(name=name, email=email)
+    user = User(id=user_id, name=name, email=email)
     result = user.persist()
     return jsonify({
         "success": True,
@@ -58,12 +62,12 @@ def post_user():
     }), 201
 
 
-@app.route('/api/v1/users/<int:id>', methods=['PATCH'])
-def patch_user(id):
+@app.route('/api/v1/users/<string:user_id>', methods=['PATCH'])
+def patch_user(user_id):
     """
     Modifies a user in the database
 
-    :param id: The id of the user record
+    :param user_id: The id of the user record
     :return: A 200 JSON response indicating the success of the request and the new details of the user
     """
     if request.json is None:
@@ -78,7 +82,7 @@ def patch_user(id):
     if email is not None and not match('^[\w\d_]+@[\w\d_]+\.[\w\d_]+$', email):
         abort(400)
 
-    user = User.query.get(id)
+    user = User.query.get(user_id)
     if user is None:
         abort(404)
 
@@ -93,15 +97,15 @@ def patch_user(id):
     }), 200
 
 
-@app.route('/api/v1/users/<int:id>', methods=['DELETE'])
-def delete_user(id):
+@app.route('/api/v1/users/<string:user_id>', methods=['DELETE'])
+def delete_user(user_id):
     """
     Deletes a user from the database
 
-    :param id: The id of the user
+    :param user_id: The id of the user
     :return: A 200 JSON response indicating the success of the request
     """
-    user = User.query.get(id)
+    user = User.query.get(user_id)
     if user is None:
         abort(404)
 
@@ -115,7 +119,7 @@ def delete_user(id):
         abort(500)
 
 
-@app.route('/api/v1/users/<int:user_id>/todos')
+@app.route('/api/v1/users/<string:user_id>/todos')
 def get_todos(user_id):
     """
     Returns the todos owned by a user.
@@ -134,7 +138,7 @@ def get_todos(user_id):
     }), 200
 
 
-@app.route('/api/v1/users/<int:user_id>/todos', methods=['POST'])
+@app.route('/api/v1/users/<string:user_id>/todos', methods=['POST'])
 def post_todo(user_id):
     """
     Creates todos in the database for user with id `user_id`.
@@ -170,7 +174,7 @@ def post_todo(user_id):
     }), 200
 
 
-@app.route('/api/v1/users/<int:user_id>/todos/<int:todo_id>', methods=['PATCH'])
+@app.route('/api/v1/users/<string:user_id>/todos/<int:todo_id>', methods=['PATCH'])
 def patch_todo(user_id, todo_id):
     """
     Modifies a todo for user with `user_id` in the database.
@@ -205,7 +209,7 @@ def patch_todo(user_id, todo_id):
     }), 200
 
 
-@app.route('/api/v1/users/<int:user_id>/todos/<int:todo_id>', methods=['DELETE'])
+@app.route('/api/v1/users/<string:user_id>/todos/<int:todo_id>', methods=['DELETE'])
 def delete_todo(user_id, todo_id):
     """
     Deletes a user todo from the database.
@@ -246,6 +250,14 @@ def handle_404(error):
         "success": False,
         "message": "Resource not found"
     }), 404
+
+
+@app.errorhandler(409)
+def handle_409(error):
+    return jsonify({
+        "success": False,
+        "message": "Conflict"
+    }), 409
 
 
 @app.errorhandler(415)
