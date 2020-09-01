@@ -33,4 +33,7 @@ jobs:
       - name: Run tests
         env:
           TEST_DATABASE_URL: "postgresql://postgres:password@localhost:5432/mahdi_todo_test"
+          AUTH0_DOMAIN: "mahdi-todo.us.auth0.com"
+          AUTH0_API_AUDIENCE: "backend"
+          AUTH0_SIGNING_ALGORITHM: "RS256"
         run: python -m unittest

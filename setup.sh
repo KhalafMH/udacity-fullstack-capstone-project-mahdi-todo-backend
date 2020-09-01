@@ -1,0 +1,5 @@
+export AUTH0_DOMAIN='mahdi-todo.us.auth0.com'
+export AUTH0_SIGNING_ALGORITHM='RS256'
+export AUTH0_API_AUDIENCE='backend'
+export AUTH0_CLIENT_ID='OrlQaGgAAqRVlmiwMDQfxX4KTIutPNU0'
+export AUTH0_CLIENT_SECRET='kT_tEbBV1laxuJNGGCKXHA9uy0nbSW-zmsKgg_je6PPz126qPlcDjweA91uHp286'

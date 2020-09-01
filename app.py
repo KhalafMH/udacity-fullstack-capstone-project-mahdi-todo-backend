@@ -17,6 +17,11 @@ CORS(app)
 @app.route('/api/v1/users')
 @requires_auth_permission('read:all-users')
 def get_all_users(token_payload):
+    """
+    Returns the details of all the users in the database.
+
+    :return: A 200 JSON response indicating the success of the request and a list with the details of all users
+    """
     users = User.query.all()
 
     return jsonify({
