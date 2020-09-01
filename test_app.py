@@ -97,6 +97,7 @@ class AppTest(unittest.TestCase):
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
+        self.assertFalse(response.json["success"])
 
     def test_patch_user_modifies_the_user_record(self):
         old_name = 'Example User'
@@ -134,6 +135,7 @@ class AppTest(unittest.TestCase):
 
         # Then: A failed response with error 404 is received and user is not inserted in the database
         self.assertEqual(404, response.status_code)
+        self.assertFalse(response.json["success"])
         self.assertIsNone(User.query.get(ID))
 
     def test_patch_user_fails_with_400_when_request_invalid(self):
@@ -148,6 +150,8 @@ class AppTest(unittest.TestCase):
         # Then: A failed response with error 400 is received and user is not modified
         self.assertEqual(400, response1.status_code)
         self.assertEqual(400, response2.status_code)
+        self.assertFalse(response1.json["success"])
+        self.assertFalse(response2.json["success"])
         self.assertEqual(user_before, User.query.get(user_before.id))
 
     def test_patch_user_fails_with_415_when_request_is_not_json(self):
@@ -160,6 +164,7 @@ class AppTest(unittest.TestCase):
 
         # Then: A 415 error is received
         self.assertEqual(415, response.status_code)
+        self.assertFalse(response.json["success"])
 
     def test_delete_user_deletes_the_user_from_the_database(self):
         # Given: A user exists in the database
@@ -187,6 +192,7 @@ class AppTest(unittest.TestCase):
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
+        self.assertFalse(response.json["success"])
 
     def test_post_todo_creates_todo_for_a_user(self):
         # Given: No todos are present in the database for a user
@@ -227,6 +233,7 @@ class AppTest(unittest.TestCase):
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
+        self.assertFalse(response.json["success"])
 
     def test_post_todo_fails_with_415_when_data_not_json(self):
         # Given: A user exists in the database
@@ -238,6 +245,7 @@ class AppTest(unittest.TestCase):
 
         # Then: A failed response with error 415 is received
         self.assertEqual(415, response.status_code)
+        self.assertFalse(response.json["success"])
 
     def test_post_todo_fails_with_400_when_request_invalid(self):
         # Given: A user exists in the database
@@ -287,6 +295,7 @@ class AppTest(unittest.TestCase):
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
+        self.assertFalse(response.json["success"])
 
     def test_patch_todo_modifies_the_todo(self):
         # Given: A user with a single todo
@@ -319,6 +328,7 @@ class AppTest(unittest.TestCase):
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
+        self.assertFalse(response.json["success"])
 
     def test_patch_todo_fails_with_400_when_request_invalid(self):
         # Given: A user exists in the database with one todo
@@ -334,6 +344,8 @@ class AppTest(unittest.TestCase):
         # Then: A 400 response is received
         self.assertEqual(400, response1.status_code)
         self.assertEqual(400, response2.status_code)
+        self.assertFalse(response1.json["success"])
+        self.assertFalse(response2.json["success"])
 
     def test_patch_todo_fails_with_415_when_data_not_json(self):
         # Given: A user exists in the database with one todo
@@ -347,6 +359,7 @@ class AppTest(unittest.TestCase):
 
         # Then: A failed response with error 415 is received
         self.assertEqual(415, response.status_code)
+        self.assertFalse(response.json["success"])
 
     def test_delete_todo_deletes_the_todo_from_the_database(self):
         # Given: A user exists in the database with one todo
@@ -378,3 +391,4 @@ class AppTest(unittest.TestCase):
 
         # Then: A failed response with error 404 is received
         self.assertEqual(404, response.status_code)
+        self.assertFalse(response.json["success"])

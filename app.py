@@ -222,3 +222,43 @@ def delete_todo(user_id, todo_id):
         }), 200
     else:
         abort(500)
+
+
+@app.errorhandler(400)
+def handle_400(error):
+    return jsonify({
+        "success": False,
+        "message": "Invalid request"
+    }), 400
+
+
+@app.errorhandler(401)
+def handle_401(error):
+    return jsonify({
+        "success": False,
+        "message": "Not authorized"
+    }), 401
+
+
+@app.errorhandler(404)
+def handle_404(error):
+    return jsonify({
+        "success": False,
+        "message": "Resource not found"
+    }), 404
+
+
+@app.errorhandler(415)
+def handle_415(error):
+    return jsonify({
+        "success": False,
+        "message": "Invalid content type"
+    }), 415
+
+
+@app.errorhandler(500)
+def handle_500(error):
+    return jsonify({
+        "success": False,
+        "message": "Internal error"
+    }), 500
