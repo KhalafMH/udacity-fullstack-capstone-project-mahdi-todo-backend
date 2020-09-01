@@ -13,6 +13,16 @@ migrate = Migrate(app, db)
 CORS(app)
 
 
+@app.route('/api/v1/users')
+def get_all_users():
+    users = User.query.all()
+
+    return jsonify({
+        "success": True,
+        "users": list(map(lambda x: x.json, users))
+    })
+
+
 @app.route('/api/v1/users/<int:user_id>')
 def get_user(user_id):
     """
