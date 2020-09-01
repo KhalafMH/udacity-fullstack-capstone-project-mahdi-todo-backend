@@ -1,4 +1,5 @@
 import json
+import os
 from functools import wraps
 from typing import Mapping
 from urllib.request import urlopen
@@ -6,9 +7,9 @@ from urllib.request import urlopen
 from flask import request
 from jose import jwt, JWTError
 
-AUTH0_DOMAIN = 'mahdi-todo.us.auth0.com'
-ALGORITHMS = ['RS256']
-API_AUDIENCE = 'backend'
+AUTH0_DOMAIN = os.environ['AUTH0_DOMAIN']
+ALGORITHMS = [os.environ['AUTH0_SIGNING_ALGORITHM'] or 'RS256']
+API_AUDIENCE = os.environ['AUTH0_API_AUDIENCE']
 
 
 class AuthError(Exception):
@@ -92,18 +93,6 @@ def verify_decode_jwt(token):
         except JWTError as e:
             pass
     raise AuthError('Invalid token', 401)
-
-
-'''
-TODO implement @requires_auth(permission) decorator method
-    @INPUTS
-        permission: string permission (i.e. 'post:drink')
-
-    it should use the get_token_auth_header method to get the token
-    it should use the verify_decode_jwt method to decode the jwt
-    it should use the check_permissions method validate claims and check the requested permission
-    return the decorator which passes the decoded payload to the decorated method
-'''
 
 
 def requires_auth_permission(permission=''):
