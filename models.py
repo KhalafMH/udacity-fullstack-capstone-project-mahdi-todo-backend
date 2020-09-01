@@ -22,7 +22,8 @@ def setup_db(app, database_url=DATABASE_URL):
 class User(db.Model):
     __tablename__ = 'users'
 
-    def __init__(self, name, email):
+    def __init__(self, id: str, name: str, email: str):
+        self.id = id
         self.name = name
         self.email = email
 
@@ -35,7 +36,7 @@ class User(db.Model):
         else:
             return False
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String, primary_key=True)
     name = db.Column(db.String, nullable=False)
     email = db.Column(db.String, unique=True, nullable=False)
     todos = db.relationship('Todo', backref='user')
@@ -106,7 +107,7 @@ class User(db.Model):
 
         :return: A new `User` object with the same properties as this one
         """
-        result = User(name=self.name, email=self.email)
+        result = User(id=self.id, name=self.name, email=self.email)
         result.id = self.id
         return result
 
@@ -120,7 +121,7 @@ class Todo(db.Model):
         self.done = done
 
     id = db.Column(db.Integer, primary_key=True)
-    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    owner_id = db.Column(db.String, db.ForeignKey('users.id'))
     title = db.Column(db.String, nullable=False)
     done = db.Column(db.Boolean, nullable=False)
 
