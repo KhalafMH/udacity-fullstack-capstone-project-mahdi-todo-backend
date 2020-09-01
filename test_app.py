@@ -41,6 +41,35 @@ class AppTest(unittest.TestCase):
         user = User.query.filter_by(email=test_email).one()
         self.assertEqual(test_name, user.name)
 
+    def test_get_all_users_returns_all_users(self):
+        # Given: Two users exist in the database
+        user1 = User(name='Example 1', email='user1@example.com')
+        user2 = User(name='Example 2', email='user2@example.com')
+        user_1_before = user1.persist()
+        user_2_before = user2.persist()
+
+        # When: A request is made to the get all users endpoint
+        response = self.client.get(f'{BASE_URL}/users')
+
+        # Then: The response is successful and contains the details of the two users
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.json['success'])
+        self.assertTrue(user_1_before.json in response.json['users'])
+        self.assertTrue(user_2_before.json in response.json['users'])
+
+    def test_get_all_users_returns_success_with_empty_list_when_no_users_in_database(self):
+        # Given: No users are in the database
+        users = User.query.all()
+        self.assertEqual([], users)
+
+        # When: A request is made to the get all users endpoint
+        response = self.client.get(f'{BASE_URL}/users')
+
+        # Then: The response is successful with an empty list of users
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.json['success'])
+        self.assertEqual([], response.json['users'])
+
     def test_get_user_returns_user(self):
         # Given: A user exists in the database
         user = User(name='Example User', email='user@example.com')
