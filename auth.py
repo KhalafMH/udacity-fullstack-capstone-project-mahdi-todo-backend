@@ -56,6 +56,24 @@ def check_permissions(permission: str, payload: Mapping):
     return True
 
 
+def check_user_id(user_id: str, payload: Mapping):
+    """
+    Check if the payload contains the required user_id.
+
+    :param user_id: A user id string.
+    :param payload: A decoded JWT payload.
+    :return: True if the payload has the same subject as the user_id.
+    :raises AuthError if the payload does not include a matching subject.
+    """
+    payload_subject = payload.get('sub')
+    if payload_subject is None:
+        raise AuthError('Subject missing from payload', 401)
+    if user_id != payload_subject:
+        raise AuthError(f'Request is not autheticated by user with id "{user_id}"', 401)
+
+    return True
+
+
 def verify_decode_jwt(token):
     """
     Verifies the validity of the provided token and returns the decoded payload.
@@ -104,6 +122,30 @@ def requires_auth_permission(permission=''):
             payload = verify_decode_jwt(token)
             check_permissions(permission, payload)
             return f(payload, *args, **kwargs)
+
+        return wrapper
+
+    return requires_auth_decorator
+
+
+def requires_auth_user():
+    """
+    A decorator that checks if the request is authenticated with the required user id.
+    NOTE: Requires that the user id is passed to the wrapped function in a parameter named user_id.
+
+    :return: A decorator that invokes the decorated function only if the request contains the required user id.
+    :raises AuthError if no valid JWT is provided in the request headers or if the user_id is not matching.
+    """
+
+    def requires_auth_decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            user_id = kwargs['user_id']
+            payload = args[0]
+
+            check_user_id(user_id, payload)
+
+            return f(*args, **kwargs)
 
         return wrapper
 

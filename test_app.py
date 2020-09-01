@@ -11,6 +11,8 @@ from test_auth import JWT_WITH_MANAGER_ROLE_PERMISSIONS, JWT_WITH_USER_ROLE_PERM
 BASE_URL = '/api/v1'
 MANAGER_HEADERS = {'Authorization': f'Bearer {JWT_WITH_MANAGER_ROLE_PERMISSIONS}'}
 USER_HEADERS = {'Authorization': f'Bearer {JWT_WITH_USER_ROLE_PERMISSIONS}'}
+AUTHENTICATED_USER_ID = json.loads(DECODED_PAYLOAD_OF_USER_TOKEN)['sub']
+AUTHENTICATED_MANAGER_ID = json.loads(DECODED_PAYLOAD_OF_MANAGER_TOKEN)['sub']
 
 
 def mock_verify_decode_jwt_side_effect(token):
@@ -45,7 +47,7 @@ class AppTest(unittest.TestCase):
     def test_put_user_persists_user(self):
         test_name = 'Example User'
         test_email = 'user@example.com'
-        test_user_id = '1'
+        test_user_id = AUTHENTICATED_USER_ID
 
         # Given: User not present in database
         user_count = User.query.filter_by(email=test_email).count()
@@ -65,7 +67,7 @@ class AppTest(unittest.TestCase):
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_put_user_fails_if_user_already_present(self):
         # Given: A user exists in the database
-        user = User(id='1', name='Example 1', email='user1@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example 1', email='user1@example.com')
         user_before = user.persist()
 
         # When: A request is made to put user with the same id
@@ -124,8 +126,10 @@ class AppTest(unittest.TestCase):
 
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_get_user_returns_user(self):
+        user_id = AUTHENTICATED_USER_ID
+
         # Given: A user exists in the database
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=user_id, name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A request is performed to the GET user endpoint
@@ -140,7 +144,7 @@ class AppTest(unittest.TestCase):
 
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_get_user_fails_with_404_when_user_non_existent(self):
-        user_id = '2000'
+        user_id = AUTHENTICATED_USER_ID
 
         # Given: No user exists with id user_id in the database
         user = User.query.get(user_id)
@@ -161,7 +165,7 @@ class AppTest(unittest.TestCase):
         new_email = 'sample@example.com'
 
         # Given: A user exists in the database
-        user = User(id='1', name=old_name, email=old_email)
+        user = User(id=AUTHENTICATED_USER_ID, name=old_name, email=old_email)
         user_before = user.persist()
 
         # When: The patch user endpoint is called
@@ -182,7 +186,7 @@ class AppTest(unittest.TestCase):
 
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_patch_user_fails_with_404_when_user_non_existent(self):
-        user_id = '2000'
+        user_id = AUTHENTICATED_USER_ID
 
         # Given: No user exists with id user_id in the database
         user = User.query.get(user_id)
@@ -199,7 +203,7 @@ class AppTest(unittest.TestCase):
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_patch_user_fails_with_400_when_request_invalid(self):
         # Given: A user exists in the database
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A request is made to modify the user with invalid data
@@ -217,7 +221,7 @@ class AppTest(unittest.TestCase):
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_patch_user_fails_with_415_when_request_is_not_json(self):
         # Given: A record exists in the database
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A request is performed with no JSON content
@@ -230,7 +234,7 @@ class AppTest(unittest.TestCase):
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_delete_user_deletes_the_user_from_the_database(self):
         # Given: A user exists in the database
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A delete request is performed
@@ -244,7 +248,7 @@ class AppTest(unittest.TestCase):
 
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_delete_user_fails_with_404_when_user_non_existent(self):
-        user_id = '2000'
+        user_id = AUTHENTICATED_USER_ID
 
         # Given: No user exists with id user_id in the database
         user = User.query.get(user_id)
@@ -260,7 +264,7 @@ class AppTest(unittest.TestCase):
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_post_todo_creates_todo_for_a_user(self):
         # Given: No todos are present in the database for a user
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
 
         todo_title1 = 'Do something'
@@ -285,7 +289,7 @@ class AppTest(unittest.TestCase):
 
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_post_todo_fails_with_404_when_user_non_existent(self):
-        user_id = '2000'
+        user_id = AUTHENTICATED_USER_ID
 
         # Given: No user exists with id user_id in the database
         user = User.query.get(user_id)
@@ -303,7 +307,7 @@ class AppTest(unittest.TestCase):
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_post_todo_fails_with_415_when_data_not_json(self):
         # Given: A user exists in the database
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A request is made to create a todo with no JSON content
@@ -316,7 +320,7 @@ class AppTest(unittest.TestCase):
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_post_todo_fails_with_400_when_request_invalid(self):
         # Given: A user exists in the database
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A post request is made to the create todos endpoint with no title for a todo
@@ -334,7 +338,7 @@ class AppTest(unittest.TestCase):
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_get_user_todos_returns_the_todos(self):
         # Given: A user with some todos
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
         todo1 = Todo(owner_id=user_before.id, title='Do something', done=True)
         todo2 = Todo(owner_id=user_before.id, title='Do something else', done=False)
@@ -354,7 +358,7 @@ class AppTest(unittest.TestCase):
 
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_get_user_todos_fails_with_404_when_user_non_existent(self):
-        user_id = '2000'
+        user_id = AUTHENTICATED_USER_ID
 
         # Given: No user exists with id user_id in the database
         user = User.query.get(user_id)
@@ -370,7 +374,7 @@ class AppTest(unittest.TestCase):
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_patch_todo_modifies_the_todo(self):
         # Given: A user with a single todo
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
         todo = Todo(owner_id=user_before.id, title='Do something', done=False)
         todo_before = todo.persist()
@@ -393,7 +397,7 @@ class AppTest(unittest.TestCase):
         # Given: No todo exists with id todo_id in the database for a user
         todo = Todo.query.get(todo_id)
         self.assertIsNone(todo)
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
 
         # When: A patch request is made to modify todo with id todo_id
@@ -407,7 +411,7 @@ class AppTest(unittest.TestCase):
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_patch_todo_fails_with_400_when_request_invalid(self):
         # Given: A user exists in the database with one todo
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
         todo = Todo(owner_id=user_before.id, title='Do something', done=False)
         todo_before = todo.persist()
@@ -427,7 +431,7 @@ class AppTest(unittest.TestCase):
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_patch_todo_fails_with_415_when_data_not_json(self):
         # Given: A user exists in the database with one todo
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
         todo = Todo(owner_id=user_before.id, title='Do something', done=False)
         todo_before = todo.persist()
@@ -442,7 +446,7 @@ class AppTest(unittest.TestCase):
     @patch('auth.verify_decode_jwt', mock_verify_decode_jwt)
     def test_delete_todo_deletes_the_todo_from_the_database(self):
         # Given: A user exists in the database with one todo
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
         todo = Todo(owner_id=user_before.id, title='Do something', done=False)
         todo_before = todo.persist()
@@ -461,7 +465,7 @@ class AppTest(unittest.TestCase):
         todo_id = 2000
 
         # Given: No todo exists with id todo_id in the database for a user
-        user = User(id='1', name='Example User', email='user@example.com')
+        user = User(id=AUTHENTICATED_USER_ID, name='Example User', email='user@example.com')
         user_before = user.persist()
         todo = Todo.query.get(todo_id)
         self.assertIsNone(todo)
@@ -523,8 +527,8 @@ class AppTest(unittest.TestCase):
         test_email_2 = 'user2@example.com'
         new_name = 'Sample User'
 
-        user_id_1 = '1'
-        user_id_2 = '2'
+        user_id_1 = AUTHENTICATED_USER_ID
+        user_id_2 = AUTHENTICATED_MANAGER_ID
         todo_id = '1'
         todo_title1 = 'Do something'
         todo_title2 = 'Do something else'
@@ -542,10 +546,10 @@ class AppTest(unittest.TestCase):
         # When: Requests are made by an authenticated user
         allowed_requests = [
             self.client.get(f'{BASE_URL}/users/{user_id_1}', headers=USER_HEADERS),
-            self.client.put(f'{BASE_URL}/users/{user_id_2}', json={'name': test_name_2, 'email': test_email_2},
+            self.client.delete(f'{BASE_URL}/users/{user_id_1}', headers=USER_HEADERS),
+            self.client.put(f'{BASE_URL}/users/{user_id_1}', json={'name': test_name_2, 'email': test_email_2},
                             headers=USER_HEADERS),
             self.client.patch(f'{BASE_URL}/users/{user_id_1}', json={'name': new_name}, headers=USER_HEADERS),
-            self.client.delete(f'{BASE_URL}/users/{user_id_2}', headers=USER_HEADERS),
             self.client.get(f'{BASE_URL}/users/{user_id_1}/todos', headers=USER_HEADERS),
             self.client.post(f'{BASE_URL}/users/{user_id_1}/todos', json=todos, headers=USER_HEADERS),
             self.client.patch(f'{BASE_URL}/users/{user_id_1}/todos/{todo_id}', json={'done': True},
@@ -571,15 +575,15 @@ class AppTest(unittest.TestCase):
         test_email_2 = 'user2@example.com'
         new_name = 'Sample User'
 
-        user_id_1 = '1'
-        user_id_2 = '2'
+        user_id_1 = AUTHENTICATED_USER_ID
+        user_id_2 = AUTHENTICATED_MANAGER_ID
         todo_id = '1'
         todo_title1 = 'Do something'
         todo_title2 = 'Do something else'
 
-        user = User(id=user_id_1, name=test_name_1, email=test_email_1)
+        user = User(id=user_id_2, name=test_name_2, email=test_email_2)
         user.persist()
-        todo = Todo(owner_id=user_id_1, title=todo_title1, done=False)
+        todo = Todo(owner_id=user_id_2, title=todo_title1, done=False)
         todo.persist()
 
         todos = [
@@ -590,16 +594,16 @@ class AppTest(unittest.TestCase):
         # When: Requests are made by an authenticated manager
         allowed_requests = [
             self.client.get(f'{BASE_URL}/users', headers=MANAGER_HEADERS),
-            self.client.get(f'{BASE_URL}/users/{user_id_1}', headers=MANAGER_HEADERS),
+            self.client.delete(f'{BASE_URL}/users/{user_id_2}', headers=MANAGER_HEADERS),
             self.client.put(f'{BASE_URL}/users/{user_id_2}', json={'name': test_name_2, 'email': test_email_2},
                             headers=MANAGER_HEADERS),
-            self.client.patch(f'{BASE_URL}/users/{user_id_1}', json={'name': new_name}, headers=MANAGER_HEADERS),
-            self.client.delete(f'{BASE_URL}/users/{user_id_2}', headers=MANAGER_HEADERS),
-            self.client.get(f'{BASE_URL}/users/{user_id_1}/todos', headers=MANAGER_HEADERS),
-            self.client.post(f'{BASE_URL}/users/{user_id_1}/todos', json=todos, headers=MANAGER_HEADERS),
-            self.client.patch(f'{BASE_URL}/users/{user_id_1}/todos/{todo_id}', json={'done': True},
+            self.client.get(f'{BASE_URL}/users/{user_id_2}', headers=MANAGER_HEADERS),
+            self.client.patch(f'{BASE_URL}/users/{user_id_2}', json={'name': new_name}, headers=MANAGER_HEADERS),
+            self.client.get(f'{BASE_URL}/users/{user_id_2}/todos', headers=MANAGER_HEADERS),
+            self.client.post(f'{BASE_URL}/users/{user_id_2}/todos', json=todos, headers=MANAGER_HEADERS),
+            self.client.patch(f'{BASE_URL}/users/{user_id_2}/todos/{todo_id}', json={'done': True},
                               headers=MANAGER_HEADERS),
-            self.client.delete(f'{BASE_URL}/users/{user_id_1}/todos/{todo_id}', headers=MANAGER_HEADERS),
+            self.client.delete(f'{BASE_URL}/users/{user_id_2}/todos/{todo_id}', headers=MANAGER_HEADERS),
         ]
 
         # Then: The response is 2xx for all requests

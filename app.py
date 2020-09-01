@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify, abort
 from flask_cors import CORS
 from flask_migrate import Migrate
 
-from auth import requires_auth_permission, AuthError
+from auth import requires_auth_permission, AuthError, requires_auth_user
 from models import setup_db, User, Todo
 
 app = Flask(__name__)
@@ -27,6 +27,7 @@ def get_all_users(token_payload):
 
 @app.route('/api/v1/users/<string:user_id>')
 @requires_auth_permission('read:own-user')
+@requires_auth_user()
 def get_user(token_payload, user_id):
     """
     Returns the details of user with ID `user_id`.
@@ -46,6 +47,7 @@ def get_user(token_payload, user_id):
 
 @app.route('/api/v1/users/<string:user_id>', methods=['PUT'])
 @requires_auth_permission('write:own-user')
+@requires_auth_user()
 def put_user(token_payload, user_id):
     """
     Adds a new user to the database.
@@ -68,6 +70,7 @@ def put_user(token_payload, user_id):
 
 @app.route('/api/v1/users/<string:user_id>', methods=['PATCH'])
 @requires_auth_permission('write:own-user')
+@requires_auth_user()
 def patch_user(token_payload, user_id):
     """
     Modifies a user in the database
@@ -104,6 +107,7 @@ def patch_user(token_payload, user_id):
 
 @app.route('/api/v1/users/<string:user_id>', methods=['DELETE'])
 @requires_auth_permission('write:own-user')
+@requires_auth_user()
 def delete_user(token_payload, user_id):
     """
     Deletes a user from the database
@@ -127,6 +131,7 @@ def delete_user(token_payload, user_id):
 
 @app.route('/api/v1/users/<string:user_id>/todos')
 @requires_auth_permission('read:own-todos')
+@requires_auth_user()
 def get_todos(token_payload, user_id):
     """
     Returns the todos owned by a user.
@@ -147,6 +152,7 @@ def get_todos(token_payload, user_id):
 
 @app.route('/api/v1/users/<string:user_id>/todos', methods=['POST'])
 @requires_auth_permission('write:own-todos')
+@requires_auth_user()
 def post_todo(token_payload, user_id):
     """
     Creates todos in the database for user with id `user_id`.
@@ -184,6 +190,7 @@ def post_todo(token_payload, user_id):
 
 @app.route('/api/v1/users/<string:user_id>/todos/<int:todo_id>', methods=['PATCH'])
 @requires_auth_permission('write:own-todos')
+@requires_auth_user()
 def patch_todo(token_payload, user_id, todo_id):
     """
     Modifies a todo for user with `user_id` in the database.
@@ -209,7 +216,6 @@ def patch_todo(token_payload, user_id, todo_id):
 
     todo.title = new_title or todo.title
     todo.done = new_done or todo.done
-    print(f'title: {todo.title}, done: {todo.done}')
     todo.persist()
     return jsonify({
         "success": True,
@@ -220,6 +226,7 @@ def patch_todo(token_payload, user_id, todo_id):
 
 @app.route('/api/v1/users/<string:user_id>/todos/<int:todo_id>', methods=['DELETE'])
 @requires_auth_permission('write:own-todos')
+@requires_auth_user()
 def delete_todo(token_payload, user_id, todo_id):
     """
     Deletes a user todo from the database.
